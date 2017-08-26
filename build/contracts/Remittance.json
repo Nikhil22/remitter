@@ -1,0 +1,250 @@
+{
+  "contract_name": "Remittance",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "withdrawFunds",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "requiredGas",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "passwordFromAlice",
+          "type": "string"
+        },
+        {
+          "name": "passwordFromBob",
+          "type": "string"
+        }
+      ],
+      "name": "releaseEther",
+      "outputs": [
+        {
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "payable": true,
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "name": "duration",
+          "type": "uint256"
+        },
+        {
+          "name": "_withdrawer",
+          "type": "address"
+        },
+        {
+          "name": "_ethHolder",
+          "type": "address"
+        },
+        {
+          "name": "_password",
+          "type": "string"
+        }
+      ],
+      "payable": false,
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "LogOwnerWithdrawal",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "name": "toAccount",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "LogETHRelease",
+      "type": "event"
+    }
+  ],
+  "unlinked_binary": "0x6060604052619c40600655341561001257fe5b6040516106383803806106388339810160409081528151602083015191830151606084015191939091015b5b60008054600160a060020a03191633600160a060020a03161790555b60008054600160a060020a03338116600160a060020a0319928316178355438701600355600580548783169084161790556002805486831693168317908190551682526001602090815260409092209031905581516100bf91600491908401906100ca565b505b5050505061016a565b828054600181600116156101000203166002900490600052602060002090601f016020900481019282601f1061010b57805160ff1916838001178555610138565b82800160010185558215610138579182015b8281111561013857825182559160200191906001019061011d565b5b50610145929150610149565b5090565b61016791905b80821115610145576000815560010161014f565b5090565b90565b6104bf806101796000396000f300606060405263ffffffff60e060020a60003504166324600fc381146100425780638da5cb5b14610066578063974654f4146100925780639a0d65a3146100b4575bfe5b341561004a57fe5b610052610153565b604080519115158252519081900360200190f35b341561006e57fe5b610076610229565b60408051600160a060020a039092168252519081900360200190f35b341561009a57fe5b6100a2610238565b60408051918252519081900360200190f35b610052600480803590602001908201803590602001908080601f0160208091040260200160405190810160405280939291908181526020018383808284375050604080516020601f89358b0180359182018390048302840183019094528083529799988101979196509182019450925082915084018382808284375094965061023e95505050505050565b604080519115158252519081900360200190f35b60008054819033600160a060020a039081169116146101725760006000fd5b600160a060020a033316600090815260016020526040812054116101965760006000fd5b50600160a060020a033316600081815260016020908152604080832080549390558051938452908301829052805191927fa493e960de66ff5b6d1d6e19fc3fdeee4b4b5d01b686fde2dcc4b3354d27e97d929081900390910190a1604051600160a060020a0333169082156108fc029083906000818181858888f19350505050151561021e57fe5b600191505b5b5b5090565b600054600160a060020a031681565b60065481565b60006000600354431015156102535760006000fd5b600654600254600160a060020a0316600090815260016020526040812054343a909302900391909103116102875760006000fd5b60055433600160a060020a039081169116146102a35760006000fd5b8383600082826040518083805190602001908083835b602083106102d85780518252601f1990920191602091820191016102b9565b51815160209384036101000a600019018019909216911617905285519190930192850191508083835b602083106103205780518252601f199092019160209182019101610301565b6001836020036101000a0380198251168184511680821785525050505050509050019250505060405180910390209050610358610421565b81146103645760006000fd5b60065460008054600160a060020a03908116825260016020908152604080842080543a9096029586019055600254831684529283902080543480870190910390915583513390931683529082015281519296507f9c28b2992570074b908c4dbd678d65f0fbd879a3714be0642e9135aac6dd047c929081900390910190a1604051600160a060020a033316903480156108fc02916000818181858888f19350505050151561040e57fe5b600194505b5b5050505b5b5b5092915050565b6000600460405180828054600181600116156101000203166002900480156104805780601f1061045e576101008083540402835291820191610480565b820191906000526020600020905b81548152906001019060200180831161046c575b5050915050604051809103902090505b905600a165627a7a72305820423613d16dd2f858f686783ac50a2d75dee93c669f9e48f504925f039d39fd7d0029",
+  "networks": {
+    "1503752172438": {
+      "events": {
+        "0xa493e960de66ff5b6d1d6e19fc3fdeee4b4b5d01b686fde2dcc4b3354d27e97d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogOwnerWithdrawal",
+          "type": "event"
+        },
+        "0x9c28b2992570074b908c4dbd678d65f0fbd879a3714be0642e9135aac6dd047c": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "toAccount",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogETHRelease",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x3d15bb26fed9344340394eacca049e57bb1ed905",
+      "updated_at": 1503752339379
+    },
+    "1503771175997": {
+      "events": {
+        "0xa493e960de66ff5b6d1d6e19fc3fdeee4b4b5d01b686fde2dcc4b3354d27e97d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogOwnerWithdrawal",
+          "type": "event"
+        },
+        "0x9c28b2992570074b908c4dbd678d65f0fbd879a3714be0642e9135aac6dd047c": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "toAccount",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogETHRelease",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0xf8381d150c88a4abc2feb9f65efac367ad7d4378",
+      "updated_at": 1503771179132
+    },
+    "1503779122740": {
+      "events": {
+        "0xa493e960de66ff5b6d1d6e19fc3fdeee4b4b5d01b686fde2dcc4b3354d27e97d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogOwnerWithdrawal",
+          "type": "event"
+        },
+        "0x9c28b2992570074b908c4dbd678d65f0fbd879a3714be0642e9135aac6dd047c": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "name": "toAccount",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogETHRelease",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x6b277a7d0fa77cd9de7ce26b5dc686a9514a4f0e",
+      "updated_at": 1503779128504
+    }
+  },
+  "schema_version": "0.0.5",
+  "updated_at": 1503781255155
+}
