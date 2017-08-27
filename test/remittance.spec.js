@@ -35,4 +35,19 @@ contract('Remittance', function(accounts) {
         assert.equal(amountEthToRelease, _amountEthToRelease, 'amountEthToRelease is not set');
       })
   });
+  // it("should throw an exception when deadline has passed", function() {
+  //   instance.releaseEther(
+  //
+  //   )
+  //   .then(function(returnValue) {
+  //     assert(false, "testThrow was supposed to throw but didn't.");
+  //   }).catch(function(error) {
+  //     if(error.toString().indexOf("invalid JUMP") != -1) {
+  //       console.log("We were expecting a Solidity throw (aka an invalid JUMP), we got one. Test succeeded.");
+  //     } else {
+  //       // if the error is something else (e.g., the assert from previous promise), then we fail the test
+  //       assert(false, error.toString());
+  //     }
+  //   });
+  // });
 });

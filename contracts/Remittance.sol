@@ -5,6 +5,7 @@ import './Owned.sol';
 contract Remittance is Owned {
 
     mapping(address => uint) balances;
+    mapping(string => bool) usedPasswords;
     address private ethHolder;
     uint private deadline;
     string private password;
@@ -37,11 +38,20 @@ contract Remittance is Owned {
         _;
     }
 
-    modifier isPasswordCorrect(
-        string passwordFromAlice,
-        string passwordFromBob
+    modifier arePasswordsNew(
+        string passwordOne,
+        string passwordTwo
     ) {
-        bytes32 passwordsHashed = keccak256(passwordFromAlice, passwordFromBob);
+        require(!usedPasswords[passwordOne]);
+        require(!usedPasswords[passwordTwo]);
+        _;
+    }
+
+    modifier isPasswordCorrect(
+        string passwordOne,
+        string passwordTwo
+    ) {
+        bytes32 passwordsHashed = keccak256(passwordOne, passwordTwo);
         require(passwordsHashed == getPassword());
         _;
     }
@@ -66,18 +76,27 @@ contract Remittance is Owned {
     }
 
     function releaseEther(
-        string passwordFromAlice,
-        string passwordFromBob
+        string passwordOne,
+        string passwordTwo
     )
     public
     hasTimeLeft()
     ethHolderHasEnoughEth()
     isAuthorizedWithdrawer()
-    isPasswordCorrect(passwordFromAlice, passwordFromBob)
+    arePasswordsNew(passwordOne, passwordTwo)
+    isPasswordCorrect(passwordOne, passwordTwo)
     returns(bool success) {
+        /* update used passwords */
+        updateUsedPasswords(passwordOne, passwordTwo);
+
+        /* owner collects fees */
         uint ownerFee = tx.gasprice * requiredGas;
         balances[owner] += ownerFee;
+
+        /* decrement the eth holder's balance */
         balances[ethHolder] -= (amountEthToRelease + ownerFee);
+
+        /* release ether to the sender of the transaction */
         LogETHRelease(msg.sender, amountEthToRelease);
         msg.sender.transfer(amountEthToRelease);
         return true;
@@ -96,5 +115,10 @@ contract Remittance is Owned {
         LogOwnerWithdrawal(msg.sender, balance);
         msg.sender.transfer(balance);
         return true;
+    }
+
+    function updateUsedPasswords(string passwordOne, string passwordTwo) {
+        usedPasswords[passwordOne] = true;
+        usedPasswords[passwordTwo] = true;
     }
 }
