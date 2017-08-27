@@ -7,6 +7,7 @@ contract('Remittance', function(accounts) {
   const ethHolder = accounts[1];
   const withdrawer = accounts[2];
   const password = 'qwe123';
+  const amountEthToRelease = 2;
 
   beforeEach(() => {
     return Remittance.new(
@@ -14,6 +15,7 @@ contract('Remittance', function(accounts) {
       withdrawer,
       ethHolder,
       password,
+      amountEthToRelease,
       { from: owner }
     )
     .then(thisInstance => {
@@ -25,6 +27,12 @@ contract('Remittance', function(accounts) {
     instance.owner()
       .then(_owner => {
         assert.equal(owner, _owner, 'owner is not set');
+      })
+  });
+  it("amountEthToRelease should be set", () => {
+    instance.amountEthToRelease()
+      .then(_amountEthToRelease => {
+        assert.equal(amountEthToRelease, _amountEthToRelease, 'amountEthToRelease is not set');
       })
   });
 });
