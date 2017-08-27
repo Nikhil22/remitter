@@ -2,6 +2,7 @@ var Remittance = artifacts.require("./Remittance.sol");
 var util = require('./util');
 var getTransactionReceiptMined = util.getTransactionReceiptMined;
 var expectedExceptionPromise = util.expectedExceptionPromise;
+var promisify = util.promisify;
 
 contract('Remittance', function(accounts) {
   let instance;
@@ -56,39 +57,87 @@ contract('Remittance', function(accounts) {
     }, 1000000);
   });
 
-  // it('should be not be withdrawable after deadline', () => {
-  //     var instance;
-  //     return Remittance.new(
-  //       sender,
-  //       web3.sha3(password, {encoding: 'hex'}),
-  //       web3.sha3(recipient, {encoding: 'hex'}),
-  //       duration,
-  //       {from: owner})
-  //     .then(_instance => {
-  //       instance = _instance;
-  //       return web3.eth.sendTransaction(
-  //         {from: alice, value: amount, to: Remittance.address});
-  //     })
-  //     .then(tx => {
-  //       return expectedExceptionPromise(() => {
-  //         return instance.refund({from: alice, gas: 1000000})
-  //         .then(txObj => txObj.tx);
-  //       }, 1000000);
-  //     });
-  //   });
-  // it("should throw an exception when deadline has passed", function() {
-  //   instance.releaseEther(
-  //
-  //   )
-  //   .then(function(returnValue) {
-  //     assert(false, "testThrow was supposed to throw but didn't.");
-  //   }).catch(function(error) {
-  //     if(error.toString().indexOf("invalid JUMP") != -1) {
-  //       console.log("We were expecting a Solidity throw (aka an invalid JUMP), we got one. Test succeeded.");
-  //     } else {
-  //       // if the error is something else (e.g., the assert from previous promise), then we fail the test
-  //       assert(false, error.toString());
-  //     }
+  it('should release funds to recipient if both correct hashes are provided', () => {
+    var initialBalance;
+
+    return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+    .then(balance => {
+      initialBalance = balance;
+      return instance.releaseEther(
+        web3.sha3(password, {encoding: 'hex'}),
+        web3.sha3(withdrawer, {encoding: 'hex'}),
+        { from: withdrawer });
+    })
+    .then(txObj => {
+      return web3.eth.getBalance(withdrawer);
+    })
+    .then(balance => {
+      assert.isAbove(
+        balance.toNumber(),
+        initialBalance.toNumber(),
+        "Withdrawer's balance wasn't credited!")
+    });
+  });
+
+  it('should not release funds to any account without correct passwords', () => {
+  var initialBalance;
+
+  return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+    .then(balance => {
+      initialBalance = balance;
+      return expectedExceptionPromise(() => {
+        return instance.releaseEther(
+          web3.sha3(wrongPassword, {encoding: 'hex'}),
+          web3.sha3(withdrawer, {encoding: 'hex'}),
+          {from: withdrawer, gas: 1000000})
+        .then(txObj => txObj.tx);
+      }, 1000000);
+    })
+  });
+
+it("should not release funds to any address that isn't the recipient", () => {
+  var initialBalance;
+  var notRecipient = ethHolder;
+  return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+    .then(balance => {
+      initialBalance = balance;
+      return expectedExceptionPromise(() => {
+        return instance.releaseEther(
+          web3.sha3(password, {encoding: 'hex'}),
+          web3.sha3(withdrawer, {encoding: 'hex'}),
+          {from: notRecipient, gas: 1000000})
+        .then(txObj => txObj.tx);
+      }, 1000000);
+    })
+  });
+
+  // it('it should give some commission to the owner upon withdrawal', () => {
+  //   var initialBalance;
+  //   return Remittance.new(
+  //     sender,
+  //     web3.sha3(password, {encoding: 'hex'}),
+  //     web3.sha3(recipient, {encoding: 'hex'}),
+  //     0,
+  //     {from: owner})
+  //   .then(instance => {
+  //     contractInstance = instance;
+  //     return web3.eth.getBalance(owner);
+  //   })
+  //   .then(_balance => {
+  //     initialBalance = _balance;
+  //     var txn = web3.eth.sendTransaction(
+  //       {from: alice, value: amount, to: contractInstance.address});
+  //     return getTransactionReceiptMined(txn);
+  //   })
+  //   .then(receipt => {
+  //     return web3.eth.getBalance(owner);
+  //   })
+  //   .then(balance => {
+  //     assert.isAbove(
+  //       balance.toNumber(),
+  //       initialBalance.toNumber(),
+  //       "Owner's balance wasn't credited!")
   //   });
   // });
+
 });

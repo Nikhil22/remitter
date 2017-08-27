@@ -50,7 +50,16 @@ function expectedExceptionPromise(action, gasToUse) {
   });
 };
 
+function promisify(inner) {
+  return new Promise((resolve, reject) =>
+    inner((err, res) => {
+      err ? reject(err) : resolve(res);
+    })
+  );
+}
+
 module.exports = {
   getTransactionReceiptMined,
-  expectedExceptionPromise
+  expectedExceptionPromise,
+  promisify
 };
