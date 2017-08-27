@@ -5,16 +5,23 @@ import './Owned.sol';
 contract Remittance is Owned {
 
     mapping(address => uint) balances;
-    mapping(string => bool) usedPasswords;
+    mapping(bytes32 => bool) usedPasswords;
     address private ethHolder;
     uint private deadline;
-    string private password;
+    bytes32 private passwordHash1;
+    bytes32 private passwordHash2;
     address private withdrawer;
     uint public requiredGas = 40000;
     uint public amountEthToRelease;
+    uint private maxDuration = 20;
 
     modifier hasTimeLeft() {
         require(block.number < deadline);
+        _;
+    }
+
+    modifier isWithinMaxDuration(uint _duration) {
+        require(_duration <= maxDuration);
         _;
     }
 
@@ -39,20 +46,20 @@ contract Remittance is Owned {
     }
 
     modifier arePasswordsNew(
-        string passwordOne,
-        string passwordTwo
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
     ) {
-        require(!usedPasswords[passwordOne]);
-        require(!usedPasswords[passwordTwo]);
+        require(!usedPasswords[_passwordHash1]);
+        require(!usedPasswords[_passwordHash2]);
         _;
     }
 
     modifier isPasswordCorrect(
-        string passwordOne,
-        string passwordTwo
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
     ) {
-        bytes32 passwordsHashed = keccak256(passwordOne, passwordTwo);
-        require(passwordsHashed == getPassword());
+        require(sha3(_passwordHash1) == passwordHash1);
+        require(sha3(_passwordHash2) == passwordHash2);
         _;
     }
 
@@ -63,31 +70,39 @@ contract Remittance is Owned {
         uint duration,
         address _withdrawer,
         address _ethHolder,
-        string _password,
-        uint _amountEthToRelease
-    ) public {
+        uint _amountEthToRelease,
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
+    ) public isWithinMaxDuration(duration) {
+        /* set owner */
         owner = msg.sender;
+
+        /* set deadline */
         deadline = block.number + duration;
+
         amountEthToRelease = _amountEthToRelease;
         withdrawer = _withdrawer;
         ethHolder = _ethHolder;
         balances[ethHolder] = _ethHolder.balance;
-        password = _password;
+
+        /* set passwords */
+        passwordHash1 = sha3(_passwordHash1);
+        passwordHash2 = sha3(_passwordHash2);
     }
 
     function releaseEther(
-        string passwordOne,
-        string passwordTwo
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
     )
     public
     hasTimeLeft()
     ethHolderHasEnoughEth()
     isAuthorizedWithdrawer()
-    arePasswordsNew(passwordOne, passwordTwo)
-    isPasswordCorrect(passwordOne, passwordTwo)
+    arePasswordsNew(_passwordHash1, _passwordHash2)
+    isPasswordCorrect(_passwordHash1, _passwordHash2)
     returns(bool success) {
         /* update used passwords */
-        updateUsedPasswords(passwordOne, passwordTwo);
+        updateUsedPasswords(_passwordHash1, _passwordHash2);
 
         /* owner collects fees */
         uint ownerFee = tx.gasprice * requiredGas;
@@ -102,10 +117,6 @@ contract Remittance is Owned {
         return true;
     }
 
-    function getPassword() private returns(bytes32 _password) {
-        return keccak256(password);
-    }
-
     function withdrawFunds()
     isOwner()
     hasPositiveBalance()
@@ -117,8 +128,8 @@ contract Remittance is Owned {
         return true;
     }
 
-    function updateUsedPasswords(string passwordOne, string passwordTwo) {
-        usedPasswords[passwordOne] = true;
-        usedPasswords[passwordTwo] = true;
+    function updateUsedPasswords(bytes32 _passwordHash1, bytes32 _passwordHash2) {
+        usedPasswords[_passwordHash1] = true;
+        usedPasswords[_passwordHash2] = true;
     }
 }
