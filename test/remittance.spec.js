@@ -19,11 +19,9 @@ contract('Remittance', function(accounts) {
     return Remittance.new(
       duration,
       withdrawer,
-      ethHolder,
-      amountEthToRelease,
       web3.sha3(password, {encoding: 'hex'}),
       web3.sha3(withdrawer, {encoding: 'hex'}),
-      { from: owner }
+      { from: owner, value: amountEthToRelease }
     )
     .then(thisInstance => {
       instance = thisInstance;
@@ -36,23 +34,15 @@ contract('Remittance', function(accounts) {
         assert.equal(owner, _owner, 'owner is not set');
       })
   });
-  it("amountEthToRelease should be set", () => {
-    instance.amountEthToRelease()
-      .then(_amountEthToRelease => {
-        assert.equal(amountEthToRelease, _amountEthToRelease, 'amountEthToRelease is not set');
-      })
-  });
 
   it('should reject durations that are too long', () => {
     return expectedExceptionPromise(() => {
       return Remittance.new(
         longDuration,
         withdrawer,
-        ethHolder,
-        amountEthToRelease,
         web3.sha3(password, {encoding: 'hex'}),
         web3.sha3(withdrawer, {encoding: 'hex'}),
-        { from: owner, gas: 1000000 })
+        { from: owner, value: amountEthToRelease, gas: 1000000 })
       .then(txObj => txObj.tx);
     }, 1000000);
   });
@@ -80,36 +70,36 @@ contract('Remittance', function(accounts) {
   });
 
   it('should not release funds to any account without correct passwords', () => {
-  var initialBalance;
+    var initialBalance;
 
-  return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
-    .then(balance => {
-      initialBalance = balance;
-      return expectedExceptionPromise(() => {
-        return instance.releaseEther(
-          web3.sha3(wrongPassword, {encoding: 'hex'}),
-          web3.sha3(withdrawer, {encoding: 'hex'}),
-          {from: withdrawer, gas: 1000000})
-        .then(txObj => txObj.tx);
-      }, 1000000);
-    })
-  });
+    return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+      .then(balance => {
+        initialBalance = balance;
+        return expectedExceptionPromise(() => {
+          return instance.releaseEther(
+            web3.sha3(wrongPassword, {encoding: 'hex'}),
+            web3.sha3(withdrawer, {encoding: 'hex'}),
+            {from: withdrawer, gas: 1000000})
+          .then(txObj => txObj.tx);
+        }, 1000000);
+      })
+    });
 
-it("should not release funds to any address that isn't the recipient", () => {
-  var initialBalance;
-  var notRecipient = ethHolder;
-  return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
-    .then(balance => {
-      initialBalance = balance;
-      return expectedExceptionPromise(() => {
-        return instance.releaseEther(
-          web3.sha3(password, {encoding: 'hex'}),
-          web3.sha3(withdrawer, {encoding: 'hex'}),
-          {from: notRecipient, gas: 1000000})
-        .then(txObj => txObj.tx);
-      }, 1000000);
-    })
-  });
+  it("should not release funds to any address that isn't the recipient", () => {
+    var initialBalance;
+    var notRecipient = ethHolder;
+    return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+      .then(balance => {
+        initialBalance = balance;
+        return expectedExceptionPromise(() => {
+          return instance.releaseEther(
+            web3.sha3(password, {encoding: 'hex'}),
+            web3.sha3(withdrawer, {encoding: 'hex'}),
+            {from: notRecipient, gas: 1000000})
+          .then(txObj => txObj.tx);
+        }, 1000000);
+      })
+    });
 
   // it('it should give some commission to the owner upon withdrawal', () => {
   //   var initialBalance;

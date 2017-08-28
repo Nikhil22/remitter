@@ -1,4 +1,4 @@
-pragma solidity ^ 0.4 .6;
+pragma solidity ^ 0.4.10;
 
 import './Owned.sol';
 
@@ -35,11 +35,6 @@ contract Remittance is Owned {
         _;
     }
 
-    modifier ethHolderHasEnoughEth() {
-        require(balances[ethHolder] - (tx.gasprice * requiredGas) - amountEthToRelease > 0);
-        _;
-    }
-
     modifier isAuthorizedWithdrawer() {
         require(msg.sender == withdrawer);
         _;
@@ -69,21 +64,17 @@ contract Remittance is Owned {
     function Remittance(
         uint duration,
         address _withdrawer,
-        address _ethHolder,
-        uint _amountEthToRelease,
         bytes32 _passwordHash1,
         bytes32 _passwordHash2
-    ) public isWithinMaxDuration(duration) {
+    ) payable public isWithinMaxDuration(duration) {
         /* set owner */
         owner = msg.sender;
 
         /* set deadline */
         deadline = block.number + duration;
 
-        amountEthToRelease = _amountEthToRelease;
+        /* set withdrawer */
         withdrawer = _withdrawer;
-        ethHolder = _ethHolder;
-        balances[ethHolder] = _ethHolder.balance;
 
         /* set passwords */
         passwordHash1 = sha3(_passwordHash1);
@@ -96,7 +87,6 @@ contract Remittance is Owned {
     )
     public
     hasTimeLeft()
-    ethHolderHasEnoughEth()
     isAuthorizedWithdrawer()
     arePasswordsNew(_passwordHash1, _passwordHash2)
     isPasswordCorrect(_passwordHash1, _passwordHash2)
@@ -108,12 +98,9 @@ contract Remittance is Owned {
         uint ownerFee = tx.gasprice * requiredGas;
         balances[owner] += ownerFee;
 
-        /* decrement the eth holder's balance */
-        balances[ethHolder] -= (amountEthToRelease + ownerFee);
-
         /* release ether to the sender of the transaction */
-        LogETHRelease(msg.sender, amountEthToRelease);
-        msg.sender.transfer(amountEthToRelease);
+        LogETHRelease(msg.sender, this.balance);
+        msg.sender.transfer(this.balance);
         return true;
     }
 
