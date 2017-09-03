@@ -58,8 +58,28 @@ function promisify(inner) {
   );
 }
 
+var getEventsPromise = function (myFilter, count) {
+  return new Promise(function (resolve, reject) {
+    count = count ? count : 1;
+    var results = [];
+    myFilter.watch(function (error, result) {
+      if (error) {
+        reject(error);
+      } else {
+        count--;
+        results.push(result);
+      }
+      if (count <= 0) {
+        resolve(results);
+        myFilter.stopWatching();
+      }
+    });
+  });
+};
+
 module.exports = {
   getTransactionReceiptMined,
   expectedExceptionPromise,
-  promisify
+  promisify,
+  getEventsPromise,
 };

@@ -1,32 +1,107 @@
 pragma solidity ^ 0.4.10;
 
-import './Owned.sol';
-
-contract Remittance is Owned {
+contract Remittance {
 
     mapping(address => uint) balances;
     mapping(bytes32 => bool) usedPasswords;
-    address private ethHolder;
-    uint private deadline;
-    bytes32 private passwordHash1;
-    bytes32 private passwordHash2;
+    mapping(bytes32 => RemittanceObject) remittances;
+    bytes32 public hashedPassword;
+    address public owner;
+
     address private withdrawer;
     uint public requiredGas = 40000;
-    uint public amountEthToRelease;
     uint private maxDuration = 20;
 
-    modifier hasTimeLeft() {
-        require(block.number < deadline);
+    struct RemittanceObject {
+      uint deadline;
+      bytes32 password;
+    }
+
+    event LogOwnerWithdrawal(address account, uint amount);
+    event LogETHRelease(address toAccount, uint amount);
+    event NewRemittance(bytes32 hash, uint duration);
+    event NewPassword(bytes32 hash);
+
+    function Remittance(address _withdrawer) {
+      owner = msg.sender;
+      withdrawer = _withdrawer;
+    }
+
+    function createRemittance(
+        uint duration,
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
+      )
+      public
+      payable
+      isWithinMaxDuration(duration)
+      arePasswordsNew(_passwordHash1, _passwordHash2)
+      returns (bool success)
+    {
+      bytes32 singleHash = sha3(_passwordHash1, _passwordHash2);
+      hashedPassword = singleHash;
+      RemittanceObject memory remittance = RemittanceObject(
+        block.number + duration,
+        singleHash
+      );
+      remittances[singleHash] = remittance;
+      NewRemittance(singleHash, duration);
+      updateUsedPasswords(singleHash);
+      return true;
+    }
+
+    function releaseEther(
+        bytes32 _passwordHash1,
+        bytes32 _passwordHash2
+    )
+      public
+      hasTimeLeft(_passwordHash1, _passwordHash2)
+      isAuthorizedWithdrawer()
+      isPasswordCorrect(_passwordHash1, _passwordHash2)
+    returns(bool success) {
+        /* owner collects fees */
+        uint ownerFee = tx.gasprice * requiredGas;
+        balances[owner] += ownerFee;
+
+        /* release ether to the sender of the transaction */
+        msg.sender.transfer(this.balance);
+        return true;
+    }
+
+    function withdrawFunds()
+      public
+      hasPositiveBalance()
+      isOwner
+      returns(bool success)
+    {
+        uint balance = balances[msg.sender];
+        balances[msg.sender] = 0;
+        LogOwnerWithdrawal(msg.sender, balance);
+        msg.sender.transfer(balance);
+        return true;
+    }
+
+    function updateUsedPasswords(bytes32 _passwordHash)
+      private
+      returns (bool success)
+    {
+        usedPasswords[_passwordHash] = true;
+        NewPassword(_passwordHash);
+        return true;
+    }
+
+    modifier hasTimeLeft(
+      bytes32 _passwordHash1,
+      bytes32 _passwordHash2
+    ) {
+        bytes32 singleHash = sha3(_passwordHash1, _passwordHash2);
+        RemittanceObject storage remittance = remittances[singleHash];
+        require(block.number < remittance.deadline);
         _;
     }
 
     modifier isWithinMaxDuration(uint _duration) {
         require(_duration <= maxDuration);
-        _;
-    }
-
-    modifier isOwner() {
-        require(msg.sender == owner);
         _;
     }
 
@@ -44,8 +119,7 @@ contract Remittance is Owned {
         bytes32 _passwordHash1,
         bytes32 _passwordHash2
     ) {
-        require(!usedPasswords[_passwordHash1]);
-        require(!usedPasswords[_passwordHash2]);
+        require(!usedPasswords[sha3(_passwordHash1, _passwordHash2)]);
         _;
     }
 
@@ -53,70 +127,12 @@ contract Remittance is Owned {
         bytes32 _passwordHash1,
         bytes32 _passwordHash2
     ) {
-        require(sha3(_passwordHash1) == passwordHash1);
-        require(sha3(_passwordHash2) == passwordHash2);
+        require(sha3(_passwordHash1, _passwordHash2) == hashedPassword);
         _;
     }
 
-    event LogOwnerWithdrawal(address account, uint amount);
-    event LogETHRelease(address toAccount, uint amount);
-
-    function Remittance(
-        uint duration,
-        address _withdrawer,
-        bytes32 _passwordHash1,
-        bytes32 _passwordHash2
-    ) payable public isWithinMaxDuration(duration) {
-        /* set owner */
-        owner = msg.sender;
-
-        /* set deadline */
-        deadline = block.number + duration;
-
-        /* set withdrawer */
-        withdrawer = _withdrawer;
-
-        /* set passwords */
-        passwordHash1 = sha3(_passwordHash1);
-        passwordHash2 = sha3(_passwordHash2);
-    }
-
-    function releaseEther(
-        bytes32 _passwordHash1,
-        bytes32 _passwordHash2
-    )
-    public
-    hasTimeLeft()
-    isAuthorizedWithdrawer()
-    arePasswordsNew(_passwordHash1, _passwordHash2)
-    isPasswordCorrect(_passwordHash1, _passwordHash2)
-    returns(bool success) {
-        /* update used passwords */
-        updateUsedPasswords(_passwordHash1, _passwordHash2);
-
-        /* owner collects fees */
-        uint ownerFee = tx.gasprice * requiredGas;
-        balances[owner] += ownerFee;
-
-        /* release ether to the sender of the transaction */
-        LogETHRelease(msg.sender, this.balance);
-        msg.sender.transfer(this.balance);
-        return true;
-    }
-
-    function withdrawFunds()
-    isOwner()
-    hasPositiveBalance()
-    returns(bool success) {
-        uint balance = balances[msg.sender];
-        balances[msg.sender] = 0;
-        LogOwnerWithdrawal(msg.sender, balance);
-        msg.sender.transfer(balance);
-        return true;
-    }
-
-    function updateUsedPasswords(bytes32 _passwordHash1, bytes32 _passwordHash2) {
-        usedPasswords[_passwordHash1] = true;
-        usedPasswords[_passwordHash2] = true;
+    modifier isOwner() {
+        require(msg.sender == owner);
+        _;
     }
 }

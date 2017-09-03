@@ -10,21 +10,28 @@ contract('Remittance', function(accounts) {
   const duration = 2;
   const ethHolder = accounts[1];
   const withdrawer = accounts[2];
-  const password = "yoyo";
-  const wrongPassword = "blah";
+  const passwordOne = web3.sha3('abc', {encoding: 'hex'});
+  const passwordTwo = web3.sha3('def', {encoding: 'hex'});
+  const wrongPassword = web3.sha3('bla', {encoding: 'hex'});;
   const amountEthToRelease = web3.toWei(2, 'ether');
   const longDuration = 100;
 
   beforeEach(() => {
     return Remittance.new(
-      duration,
       withdrawer,
-      web3.sha3(password, {encoding: 'hex'}),
-      web3.sha3(withdrawer, {encoding: 'hex'}),
-      { from: owner, value: amountEthToRelease }
+      { from: owner }
     )
     .then(thisInstance => {
       instance = thisInstance;
+      return instance;
+    })
+    .then(instance => {
+      instance.createRemittance(
+        10,
+        passwordOne,
+        passwordTwo,
+        { from: owner, value: amountEthToRelease }
+      );
     });
   });
 
@@ -37,37 +44,16 @@ contract('Remittance', function(accounts) {
 
   it('should reject durations that are too long', () => {
     return expectedExceptionPromise(() => {
-      return Remittance.new(
+      return instance.createRemittance(
         longDuration,
-        withdrawer,
-        web3.sha3(password, {encoding: 'hex'}),
-        web3.sha3(withdrawer, {encoding: 'hex'}),
+        web3.sha3('abc', {encoding: 'hex'}),
+        web3.sha3('def', {encoding: 'hex'}),
         { from: owner, value: amountEthToRelease, gas: 1000000 })
       .then(txObj => txObj.tx);
     }, 1000000);
   });
 
-  it('should release funds to recipient if both correct hashes are provided', () => {
-    var initialBalance;
-
-    return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
-    .then(balance => {
-      initialBalance = balance;
-      return instance.releaseEther(
-        web3.sha3(password, {encoding: 'hex'}),
-        web3.sha3(withdrawer, {encoding: 'hex'}),
-        { from: withdrawer });
-    })
-    .then(txObj => {
-      return web3.eth.getBalance(withdrawer);
-    })
-    .then(balance => {
-      assert.isAbove(
-        balance.toNumber(),
-        initialBalance.toNumber(),
-        "Withdrawer's balance wasn't credited!")
-    });
-  });
+  //should reject already used passwords
 
   it('should not release funds to any account without correct passwords', () => {
     var initialBalance;
@@ -77,8 +63,8 @@ contract('Remittance', function(accounts) {
         initialBalance = balance;
         return expectedExceptionPromise(() => {
           return instance.releaseEther(
-            web3.sha3(wrongPassword, {encoding: 'hex'}),
-            web3.sha3(withdrawer, {encoding: 'hex'}),
+            web3.sha3('bla', {encoding: 'hex'}),
+            web3.sha3('def', {encoding: 'hex'}),
             {from: withdrawer, gas: 1000000})
           .then(txObj => txObj.tx);
         }, 1000000);
@@ -93,41 +79,34 @@ contract('Remittance', function(accounts) {
         initialBalance = balance;
         return expectedExceptionPromise(() => {
           return instance.releaseEther(
-            web3.sha3(password, {encoding: 'hex'}),
-            web3.sha3(withdrawer, {encoding: 'hex'}),
+            web3.sha3('abc', {encoding: 'hex'}),
+            web3.sha3('def', {encoding: 'hex'}),
             {from: notRecipient, gas: 1000000})
           .then(txObj => txObj.tx);
         }, 1000000);
       })
-    });
+  });
 
-  // it('it should give some commission to the owner upon withdrawal', () => {
-  //   var initialBalance;
-  //   return Remittance.new(
-  //     sender,
-  //     web3.sha3(password, {encoding: 'hex'}),
-  //     web3.sha3(recipient, {encoding: 'hex'}),
-  //     0,
-  //     {from: owner})
-  //   .then(instance => {
-  //     contractInstance = instance;
-  //     return web3.eth.getBalance(owner);
-  //   })
-  //   .then(_balance => {
-  //     initialBalance = _balance;
-  //     var txn = web3.eth.sendTransaction(
-  //       {from: alice, value: amount, to: contractInstance.address});
-  //     return getTransactionReceiptMined(txn);
-  //   })
-  //   .then(receipt => {
-  //     return web3.eth.getBalance(owner);
-  //   })
-  //   .then(balance => {
-  //     assert.isAbove(
-  //       balance.toNumber(),
-  //       initialBalance.toNumber(),
-  //       "Owner's balance wasn't credited!")
-  //   });
-  // });
+  it('should release funds to recipient if both correct hashes are provided', () => {
+    var initialBalance;
+
+    return promisify((cb) => web3.eth.getBalance(withdrawer, cb))
+      .then(balance => {
+        initialBalance = balance;
+        return instance.releaseEther(
+          passwordOne,
+          passwordTwo,
+          { from: withdrawer });
+      })
+      .then(txObj => {
+        return web3.eth.getBalance(withdrawer);
+      })
+      .then(balance => {
+        assert.isAbove(
+          balance.toNumber(),
+          initialBalance.toNumber(),
+          "Withdrawer's balance wasn't credited!")
+      });
+  });
 
 });
